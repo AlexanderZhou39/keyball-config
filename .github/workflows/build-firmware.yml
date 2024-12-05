@@ -36,7 +36,7 @@ jobs:
       uses: ./.github/actions/checkout-qmk_firmware
 
     - name: Install a link to own source
-      run: ln -s $(pwd)/qmk_firmware/keyboards/keyball __qmk__/keyboards/keyball
+      run: ln -s $(pwd)/keyball __qmk__/keyboards/keyball
 
     - name: Install missing python modules
       run: /usr/bin/python3 -m pip install -r __qmk__/requirements.txt
