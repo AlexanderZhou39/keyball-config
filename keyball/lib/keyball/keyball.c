@@ -640,23 +640,16 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     // Auto enable scroll mode when the highest layer is 3
     keyball_set_scroll_mode(get_highest_layer(state) == 3);
 
-    // When released, load saved CPI and scroll division from KBC_SAVE
-    keyball_config_t saved_config;
-    saved_config.raw = eeconfig_read_kb();
-    uint16_t masked_cpi = saved_config.cpi & 0x3FFF; // Mask to 14 bits (max CPI value)
-    keyball_set_cpi(masked_cpi);
-    keyball_set_scroll_div(saved_config.sdiv);
-
-    // if (get_highest_layer(state) == 5) {
-    //             keyball_set_cpi(CPI_SNIP); // When in layer 2, set CPI to SNIP value
-    // } else {
-    //     // When released, load saved CPI and scroll division from KBC_SAVE
-    //     keyball_config_t saved_config;
-    //     saved_config.raw = eeconfig_read_kb();
-    //     uint16_t masked_cpi = saved_config.cpi & 0x3FFF; // Mask to 14 bits (max CPI value)
-    //     keyball_set_cpi(masked_cpi);
-    //     keyball_set_scroll_div(saved_config.sdiv);
-    // }
+    if (get_highest_layer(state) == 2) {
+                keyball_set_cpi(CPI_SNIP); // When in layer 2, set CPI to SNIP value
+    } else {
+        // When released, load saved CPI and scroll division from KBC_SAVE
+        keyball_config_t saved_config;
+        saved_config.raw = eeconfig_read_kb();
+        uint16_t masked_cpi = saved_config.cpi & 0x3FFF; // Mask to 14 bits (max CPI value)
+        keyball_set_cpi(masked_cpi);
+        keyball_set_scroll_div(saved_config.sdiv);
+    }
 
     return state;
 }
