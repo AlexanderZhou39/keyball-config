@@ -7,7 +7,7 @@
         "device_version": "1.0.0"
     },
     "manufacturer": "Yowkees",
-    "keyboard_name": "Keyball44 by XCMKB v2.0",
+    "keyboard_name": "Keyball44 by Alex",
     "rgblight": {
         "driver": "ws2812"
     },
