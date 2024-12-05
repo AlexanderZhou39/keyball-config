@@ -9,9 +9,11 @@ on:
         type: string
         required: false
       keyboard:
+        default: 'keyball44'
         type: string
         required: true
       keymap:
+        default: 'vial'
         type: string
         required: true
 
@@ -40,10 +42,10 @@ jobs:
       run: /usr/bin/python3 -m pip install -r __qmk__/requirements.txt
 
     - name: Compile and link
-      run: qmk compile -j 4 -kb keyball/${{ inputs.keyboard }} -km ${{ inputs.keymap }} -e CONVERT_TO=promicro_rp2040
+      run: qmk compile -j 4 -kb keyball/${{ inputs.keyboard }} -km ${{ inputs.keymap }}
 
     - name: Archive built firmware
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.keyboard }}-${{ inputs.keymap }}-firmware
-        path: __qmk__/*.hex
+        path: __qmk__/*.uf2
