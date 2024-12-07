@@ -21,7 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #include "keyball.h"
-#include "drivers/pmw3360/pmw3360.h"
 
 
 const uint8_t CPI_DEFAULT    = KEYBALL_CPI_DEFAULT / 100;
@@ -124,11 +123,19 @@ void keyboard_pre_init_kb(void) {
 
 void pointing_device_driver_init(void) {
 #if KEYBALL_MODEL != 46
-    keyball.this_have_ball = pmw3360_init();
+    keyball.this_have_ball = pmw33xx_init(0);
 #endif
     if (keyball.this_have_ball) {
-        pmw3360_cpi_set(CPI_DEFAULT - 1);
-        pmw3360_reg_write(pmw3360_Motion_Burst, 0);
+#if defined(KEYBALL_PMW3360_UPLOAD_SROM_ID)
+#    if KEYBALL_PMW3360_UPLOAD_SROM_ID == 0x04
+        pmw3360_srom_upload(pmw3360_srom_0x04);
+#    elif KEYBALL_PMW3360_UPLOAD_SROM_ID == 0x81
+        pmw3360_srom_upload(pmw3360_srom_0x81);
+#    else
+#        error Invalid value for KEYBALL_PMW3360_UPLOAD_SROM_ID. Please choose 0x04 or 0x81 or disable it.
+#    endif
+#endif
+        pmw33xx_set_cpi(0, CPI_DEFAULT - 1);
     }
 }
 
@@ -228,15 +235,15 @@ static inline bool should_report(void) {
 
 report_mouse_t pointing_device_driver_get_report(report_mouse_t rep) {
     // fetch from optical sensor.
-    if (keyball.this_have_ball) {
-        pmw3360_motion_t d = {0};
-        if (pmw3360_motion_burst(&d)) {
-            ATOMIC_BLOCK_FORCEON {
-                keyball.this_motion.x = add16(keyball.this_motion.x, d.x);
-                keyball.this_motion.y = add16(keyball.this_motion.y, d.y);
-            }
-        }
-    }
+    // if (keyball.this_have_ball) {
+    //     pmw3360_motion_t d = {0};
+    //     if (pmw3360_motion_burst(&d)) {
+    //         ATOMIC_BLOCK_FORCEON {
+    //             keyball.this_motion.x = add16(keyball.this_motion.x, d.x);
+    //             keyball.this_motion.y = add16(keyball.this_motion.y, d.y);
+    //         }
+    //     }
+    // }
     // report mouse event, if keyboard is primary.
     if (is_keyboard_master() && should_report()) {
         // modify mouse report by PMW3360 motion.
@@ -459,15 +466,16 @@ void keyball_set_cpi(uint8_t cpi) {
     keyball.cpi_value   = cpi;
     keyball.cpi_changed = true;
     if (keyball.this_have_ball) {
-        pmw3360_cpi_set(cpi == 0 ? CPI_DEFAULT - 1 : cpi - 1);
-        pmw3360_reg_write(pmw3360_Motion_Burst, 0);
+        // pmw3360_cpi_set(cpi == 0 ? CPI_DEFAULT - 1 : cpi - 1);
+        // pmw3360_reg_write(pmw3360_Motion_Burst, 0);
+        pmw33xx_set_cpi(0, cpi == 0 ? CPI_DEFAULT - 1 : cpi - 1);
     }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // Keyboard hooks
 
-/*
+
 void keyboard_post_init_kb(void) {
 #ifdef SPLIT_KEYBOARD
     // register transaction handlers on secondary.
@@ -488,7 +496,7 @@ void keyboard_post_init_kb(void) {
     keyball_on_adjust_layout(KEYBALL_ADJUST_PENDING);
     keyboard_post_init_user();
 }
-*/
+
 
 void keyboard_post_init_kb(void) {
 #ifdef SPLIT_KEYBOARD
