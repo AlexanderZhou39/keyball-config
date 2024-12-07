@@ -39,7 +39,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SPLIT_HAND_MATRIX_GRID_LOW_IS_LEFT
 
 /* Replug-in issue */
-#define SPLIT_WATCHDOG_ENABLE //v2.00
+// #define SPLIT_WATCHDOG_ENABLE //v2.00
 // #define SPLIT_USB_DETECT
 // #define SPLIT_USB_TIMEOUT       500
 
