@@ -42,10 +42,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SPLIT_HAND_MATRIX_GRID_LOW_IS_LEFT
 
 /* Replug-in issue */
-#define SPLIT_WATCHDOG_ENABLE //v2.00
-#define SPLIT_USB_DETECT
-#define SPLIT_USB_TIMEOUT      5000
-#define SPLIT_USB_TIMEOUT_POLL 100
+// #define SPLIT_WATCHDOG_ENABLE //v2.00
+// #define SPLIT_USB_DETECT
+// #define SPLIT_USB_TIMEOUT      9000
+// #define SPLIT_USB_TIMEOUT_POLL 100
+#undef SPLIT_USB_DETECT
+#define USB_VBUS_PIN GP19
 
 #define SPLIT_TRANSACTION_IDS_KB KEYBALL_GET_INFO, KEYBALL_GET_MOTION, KEYBALL_SET_CPI
 
@@ -55,7 +57,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*Below v2.00*/
 #define RGBLIGHT_SPLIT
 #define RGBLIGHT_SLEEP 			//Turn off LEDs when computer sleeping (+72)
-#define RGB_DISABLE_WHEN_USB_SUSPENDED //As RGB light does not sleep, alternative code
+#define RGB_MATRIX_SLEEP //As RGB light does not sleep, alternative code
 /*Below v2.00 ends*/
 #    define RGBLIGHT_LED_COUNT      60
 #    define RGBLED_SPLIT    { 30, 30 }  // (30 + 29)
