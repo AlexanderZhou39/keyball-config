@@ -57,7 +57,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*Below v2.00*/
 #define RGBLIGHT_SPLIT
 #define RGBLIGHT_SLEEP 			//Turn off LEDs when computer sleeping (+72)
-#define RGB_MATRIX_SLEEP //As RGB light does not sleep, alternative code
+// #define RGB_MATRIX_SLEEP //As RGB light does not sleep, alternative code
 /*Below v2.00 ends*/
 #    define RGBLIGHT_LED_COUNT      60
 #    define RGBLED_SPLIT    { 30, 30 }  // (30 + 29)
@@ -73,7 +73,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #    ifndef RGBLIGHT_SAT_STEP
 #        define RGBLIGHT_SAT_STEP   17
 #    endif
-#define RGBLIGHT_DEFAULT_MODE RGBLIGHT_MODE_RAINBOW_SWIRL
+#define RGBLIGHT_DEFAULT_MODE RGBLIGHT_MODE_STATIC_LIGHT
+#define RGBLIGHT_DEFAULT_HUE 123
+#define RGBLIGHT_DEFAULT_VAL 93
 #endif
 #ifdef RGB_MATRIX_ENABLE
 #    define RGB_MATRIX_SPLIT    { 30, 30 }
