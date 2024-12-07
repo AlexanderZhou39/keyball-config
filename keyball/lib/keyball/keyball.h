@@ -21,11 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Configurations
 
 #ifndef KEYBALL_CPI_DEFAULT
-#    define KEYBALL_CPI_DEFAULT 500
+#    define KEYBALL_CPI_DEFAULT 1100
 #endif
 
 #ifndef KEYBALL_CPI_SNIP
-#    define KEYBALL_CPI_SNIP 100
+#    define KEYBALL_CPI_SNIP 300
 #endif
 
 #ifndef KEYBALL_SCROLL_DIV_DEFAULT
@@ -93,6 +93,8 @@ enum keyball_keycodes {
 	// snip by xcmkb
 	SNIP = QK_KB_10,
 	SNIP_TO = QK_KB_11,
+    
+    SCRL_SNIP = QK_KB_12,
 
     // User customizable 32 keycodes.
     KEYBALL_SAFE_RANGE = QK_USER_0,
@@ -131,6 +133,8 @@ typedef struct {
     bool     scroll_mode;
     uint32_t scroll_mode_changed;
     uint8_t  scroll_div;
+    bool     scroll_snip;
+    bool     scroll_toggled;
 
     uint32_t scroll_snap_last;
     int8_t   scroll_snap_tension_h;

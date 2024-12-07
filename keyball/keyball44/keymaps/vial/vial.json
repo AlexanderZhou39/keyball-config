@@ -64,8 +64,12 @@
         "name": "SNIP_TO",
         "title": "Toggle to move super slow",
         "shortName": "SNIPTO"
+    },
+    {
+        "name": "SCRL_SNIP",
+        "title": "Hold to scroll fast",
+        "shortName": "SCRSNP"
     }
-	
 ],
   "layouts" : {
     "labels": [

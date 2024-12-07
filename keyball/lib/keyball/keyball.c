@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "quantum.h"
+#include <stdint.h>
 #ifdef SPLIT_KEYBOARD
 #    include "transactions.h"
 #endif
@@ -30,7 +31,7 @@ const uint8_t CPI_MAX        = pmw3360_MAXCPI + 1;
 const uint8_t SCROLL_DIV_MAX = 7;
 
 keyball_t keyball = {
-    .this_have_ball = false,
+    .this_have_ball = true,
     .that_enable    = false,
     .that_have_ball = false,
 
@@ -42,6 +43,8 @@ keyball_t keyball = {
 
     .scroll_mode = false,
     .scroll_div  = 0,
+    .scroll_snip = false,
+    .scroll_toggled = false,
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -115,6 +118,18 @@ static void add_scroll_div(int8_t delta) {
 //////////////////////////////////////////////////////////////////////////////
 // Pointing device driver
 
+#ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
+void pointing_device_init_user(void) {
+    set_auto_mouse_enable(true);
+}
+bool auto_mouse_activation(report_mouse_t rep) {
+    if (!keyball.scroll_mode && (rep.x > 0 || rep.y > 0)) {
+        return true;
+    }
+    return false;
+}
+#endif
+
 #if KEYBALL_MODEL == 46
 void keyboard_pre_init_kb(void) {
     keyball.this_have_ball = pmw3360_init();
@@ -124,7 +139,8 @@ void keyboard_pre_init_kb(void) {
 
 void pointing_device_driver_init(void) {
 #if KEYBALL_MODEL != 46
-    keyball.this_have_ball = pmw33xx_init(0);
+    pmw33xx_init(0);
+    keyball.this_have_ball = true;
 #endif
     if (keyball.this_have_ball) {
 #if defined(KEYBALL_PMW3360_UPLOAD_SROM_ID)
@@ -136,7 +152,8 @@ void pointing_device_driver_init(void) {
 #        error Invalid value for KEYBALL_PMW3360_UPLOAD_SROM_ID. Please choose 0x04 or 0x81 or disable it.
 #    endif
 #endif
-        pmw33xx_set_cpi(0, CPI_DEFAULT - 1);
+        // pmw33xx_set_cpi(0, (CPI_DEFAULT - 1) * 100);
+        pointing_device_set_cpi((CPI_DEFAULT - 1) * 100);
     }
 }
 
@@ -148,70 +165,70 @@ void pointing_device_driver_set_cpi(uint16_t cpi) {
     keyball_set_cpi(cpi);
 }
 
-static void motion_to_mouse_move(keyball_motion_t *m, report_mouse_t *r, bool is_left) {
-#if KEYBALL_MODEL == 61 || KEYBALL_MODEL == 39 || KEYBALL_MODEL == 147 || KEYBALL_MODEL == 44
-    r->x = clip2int8(m->y);
-    r->y = clip2int8(m->x);
-    if (is_left) {
-        r->x = -r->x;
-        r->y = -r->y;
-    }
-#elif KEYBALL_MODEL == 46
-    r->x = clip2int8(m->x);
-    r->y = -clip2int8(m->y);
-#else
-#    error("unknown Keyball model")
-#endif
-    // clear motion
-    m->x = 0;
-    m->y = 0;
-}
+// static void motion_to_mouse_move(keyball_motion_t *m, report_mouse_t *r, bool is_left) {
+// #if KEYBALL_MODEL == 61 || KEYBALL_MODEL == 39 || KEYBALL_MODEL == 147 || KEYBALL_MODEL == 44
+//     r->x = clip2int8(m->y);
+//     r->y = clip2int8(m->x);
+//     if (is_left) {
+//         r->x = -r->x;
+//         r->y = -r->y;
+//     }
+// #elif KEYBALL_MODEL == 46
+//     r->x = clip2int8(m->x);
+//     r->y = -clip2int8(m->y);
+// #else
+// #    error("unknown Keyball model")
+// #endif
+//     // clear motion
+//     m->x = 0;
+//     m->y = 0;
+// }
 
-static void motion_to_mouse_scroll(keyball_motion_t *m, report_mouse_t *r, bool is_left) {
-    // consume motion of trackball.
-    uint8_t div = keyball_get_scroll_div() - 1;
-    int16_t x   = m->x >> div;
-    m->x -= x << div;
-    int16_t y = m->y >> div;
-    m->y -= y << div;
+// static void motion_to_mouse_scroll(keyball_motion_t *m, report_mouse_t *r, bool is_left) {
+//     // consume motion of trackball.
+//     uint8_t div = keyball_get_scroll_div() - 1;
+//     int16_t x   = m->x >> div;
+//     m->x -= x << div;
+//     int16_t y = m->y >> div;
+//     m->y -= y << div;
 
-    // apply to mouse report.
-#if KEYBALL_MODEL == 61 || KEYBALL_MODEL == 39 || KEYBALL_MODEL == 147 || KEYBALL_MODEL == 44
-    r->h = clip2int8(y);
-    r->v = -clip2int8(x);
-    if (is_left) {
-        r->h = -r->h;
-        r->v = -r->v;
-    }
-#elif KEYBALL_MODEL == 46
-    r->h = clip2int8(x);
-    r->v = clip2int8(y);
-#else
-#    error("unknown Keyball model")
-#endif
+//     // apply to mouse report.
+// #if KEYBALL_MODEL == 61 || KEYBALL_MODEL == 39 || KEYBALL_MODEL == 147 || KEYBALL_MODEL == 44
+//     r->h = clip2int8(y);
+//     r->v = -clip2int8(x);
+//     if (is_left) {
+//         r->h = -r->h;
+//         r->v = -r->v;
+//     }
+// #elif KEYBALL_MODEL == 46
+//     r->h = clip2int8(x);
+//     r->v = clip2int8(y);
+// #else
+// #    error("unknown Keyball model")
+// #endif
 
-#if KEYBALL_SCROLLSNAP_ENABLE
-    // scroll snap.
-    uint32_t now = timer_read32();
-    if (r->h != 0 || r->v != 0) {
-        keyball.scroll_snap_last = now;
-    } else if (TIMER_DIFF_32(now, keyball.scroll_snap_last) >= KEYBALL_SCROLLSNAP_RESET_TIMER) {
-        keyball.scroll_snap_tension_h = 0;
-    }
-    if (abs(keyball.scroll_snap_tension_h) < KEYBALL_SCROLLSNAP_TENSION_THRESHOLD) {
-        keyball.scroll_snap_tension_h += y;
-        r->h = 0;
-    }
-#endif
-}
-
-static void motion_to_mouse(keyball_motion_t *m, report_mouse_t *r, bool is_left, bool as_scroll) {
-    if (as_scroll) {
-        motion_to_mouse_scroll(m, r, is_left);
-    } else {
-        motion_to_mouse_move(m, r, is_left);
-    }
-}
+// #if KEYBALL_SCROLLSNAP_ENABLE
+//     // scroll snap.
+//     uint32_t now = timer_read32();
+//     if (r->h != 0 || r->v != 0) {
+//         keyball.scroll_snap_last = now;
+//     } else if (TIMER_DIFF_32(now, keyball.scroll_snap_last) >= KEYBALL_SCROLLSNAP_RESET_TIMER) {
+//         keyball.scroll_snap_tension_h = 0;
+//     }
+//     if (abs(keyball.scroll_snap_tension_h) < KEYBALL_SCROLLSNAP_TENSION_THRESHOLD) {
+//         keyball.scroll_snap_tension_h += y;
+//         r->h = 0;
+//     }
+// #endif
+// }
+//
+// static void motion_to_mouse(keyball_motion_t *m, report_mouse_t *r, bool is_left, bool as_scroll) {
+//     if (as_scroll) {
+//         motion_to_mouse_scroll(m, r, is_left);
+//     } else {
+//         motion_to_mouse_move(m, r, is_left);
+//     }
+// }
 
 static inline bool should_report(void) {
     uint32_t now = timer_read32();
@@ -234,24 +251,65 @@ static inline bool should_report(void) {
     return true;
 }
 
-report_mouse_t pointing_device_driver_get_report(report_mouse_t rep) {
+float scroll_accumulated_h = 0;
+float scroll_accumulated_v = 0;
+
+report_mouse_t pointing_device_task_user(report_mouse_t rep) {
     // fetch from optical sensor.
-    // if (keyball.this_have_ball) {
-    //     pmw3360_motion_t d = {0};
-    //     if (pmw3360_motion_burst(&d)) {
-    //         ATOMIC_BLOCK_FORCEON {
-    //             keyball.this_motion.x = add16(keyball.this_motion.x, d.x);
-    //             keyball.this_motion.y = add16(keyball.this_motion.y, d.y);
-    //         }
-    //     }
-    // }
+    if (keyball.this_have_ball) {
+        // pmw3360_motion_t d = {0};
+        pmw33xx_report_t report = pmw33xx_read_burst(0);
+        if (!report.motion.b.is_lifted && report.motion.b.is_motion) {
+            ATOMIC_BLOCK_FORCEON {
+                keyball.this_motion.x = add16(keyball.this_motion.x, report.delta_x);
+                keyball.this_motion.y = add16(keyball.this_motion.y, report.delta_y);
+            }
+        }
+        // if (pmw3360_motion_burst(&d)) {
+        //     ATOMIC_BLOCK_FORCEON {
+        //         keyball.this_motion.x = add16(keyball.this_motion.x, d.x);
+        //         keyball.this_motion.y = add16(keyball.this_motion.y, d.y);
+        //     }
+        // }
+    }
     // report mouse event, if keyboard is primary.
     if (is_keyboard_master() && should_report()) {
         // modify mouse report by PMW3360 motion.
-        motion_to_mouse(&keyball.this_motion, &rep, is_keyboard_left(), keyball.scroll_mode);
-        motion_to_mouse(&keyball.that_motion, &rep, !is_keyboard_left(), keyball.scroll_mode ^ keyball.this_have_ball);
+        // motion_to_mouse(&keyball.this_motion, &rep, is_keyboard_left(), keyball.scroll_mode);
+        // motion_to_mouse(&keyball.that_motion, &rep, !is_keyboard_left(), keyball.scroll_mode ^ keyball.this_have_ball);
         // store mouse report for OLED.
         keyball.last_mouse = rep;
+        // rep.x = 0;
+        // rep.y = 0;
+    }
+    // if (keyball.scroll_mode) {
+    //   rep.h = (int) ceil(-rep.x / 5);
+    //   rep.v = (int) ceil(-rep.y / 5);
+    //   rep.x = 0;
+    //   rep.y = 0;
+    // }
+    if (keyball.scroll_mode || keyball.scroll_toggled) {
+        // Calculate and accumulate scroll values based on mouse movement and divisors
+        if (keyball.scroll_snip) {
+          scroll_accumulated_h += (float) rep.x / 5.0;
+          scroll_accumulated_v += (float) -rep.y / 5.0;
+        } else {
+          scroll_accumulated_h += (float) rep.x / 40.0;
+          scroll_accumulated_v += (float) -rep.y / 40.0;
+        }
+
+        // Assign integer parts of accumulated scroll values to the mouse report
+        rep.h = (int8_t)scroll_accumulated_h;
+        rep.v = (int8_t)scroll_accumulated_v;
+
+        // Update accumulated scroll values by subtracting the integer parts
+        scroll_accumulated_h -= (int8_t)scroll_accumulated_h;
+        scroll_accumulated_v -= (int8_t)scroll_accumulated_v;
+
+        // Clear the X and Y values of the mouse report
+        rep.x = 0;
+        rep.y = 0;
+
     }
     return rep;
 }
@@ -379,7 +437,7 @@ void keyball_oled_render_ballinfo(void) {
     oled_write_P(PSTR("     CPI"), false);
     oled_write(format_4d(keyball_get_cpi()) + 1, false);
     oled_write_P(PSTR("00  S"), false);
-    oled_write_char(keyball.scroll_mode ? '1' : '0', false);
+    oled_write_char((keyball.scroll_mode || keyball.scroll_toggled) ? '1' : '0', false);
     oled_write_P(PSTR("  D"), false);
     oled_write_char('0' + keyball_get_scroll_div(), false);
 #endif
@@ -469,7 +527,8 @@ void keyball_set_cpi(uint8_t cpi) {
     if (keyball.this_have_ball) {
         // pmw3360_cpi_set(cpi == 0 ? CPI_DEFAULT - 1 : cpi - 1);
         // pmw3360_reg_write(pmw3360_Motion_Burst, 0);
-        pmw33xx_set_cpi(0, cpi == 0 ? CPI_DEFAULT - 1 : cpi - 1);
+        uint8_t new_cpi = cpi == 0 ? CPI_DEFAULT - 1 : cpi - 1;
+        pointing_device_set_cpi(new_cpi * 100);
     }
 }
 
@@ -593,9 +652,17 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         case CPI_D1K:
             add_cpi(-10);
             break;
+        case SCRL_SNIP:
+            if (record->event.pressed) {
+                keyball.scroll_snip = true;
+            } else {
+                keyball.scroll_snip = false;
+            }
+            return false;
 		case SCRL_TO:
 			if (record->event.pressed) {
-				keyball_set_scroll_mode(!keyball.scroll_mode);  // Toggle scroll mode only when the key is pressed
+        keyball.scroll_toggled = !keyball.scroll_toggled;
+				// keyball_set_scroll_mode(!keyball.scroll_mode);  // Toggle scroll mode only when the key is pressed
 			}
 			break;
         case SCRL_DVI:
@@ -649,16 +716,16 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     // Auto enable scroll mode when the highest layer is 3
     keyball_set_scroll_mode(get_highest_layer(state) == 3);
 
-    if (get_highest_layer(state) == 2) {
-                keyball_set_cpi(CPI_SNIP); // When in layer 2, set CPI to SNIP value
-    } else {
-        // When released, load saved CPI and scroll division from KBC_SAVE
-        keyball_config_t saved_config;
-        saved_config.raw = eeconfig_read_kb();
-        uint16_t masked_cpi = saved_config.cpi & 0x3FFF; // Mask to 14 bits (max CPI value)
-        keyball_set_cpi(masked_cpi);
-        keyball_set_scroll_div(saved_config.sdiv);
-    }
+    // if (get_highest_layer(state) == 5) {
+    //             keyball_set_cpi(CPI_SNIP); // When in layer 2, set CPI to SNIP value
+    // } else {
+    //     // When released, load saved CPI and scroll division from KBC_SAVE
+    //     keyball_config_t saved_config;
+    //     saved_config.raw = eeconfig_read_kb();
+    //     uint16_t masked_cpi = saved_config.cpi & 0x3FFF; // Mask to 14 bits (max CPI value)
+    //     keyball_set_cpi(masked_cpi);
+    //     keyball_set_scroll_div(saved_config.sdiv);
+    // }
 
     return state;
 }
