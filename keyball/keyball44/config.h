@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #define PMW33XX_CS_PIN      GP21 
+#define POINTING_DEVICE_ROTATION_90
+#define POINTING_DEVICE_INVERT_X
 
 // Key matrix parameters
 #define MATRIX_ROWS         (4 * 2)  // split keyboard
