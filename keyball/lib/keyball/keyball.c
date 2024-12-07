@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 const uint8_t CPI_DEFAULT    = KEYBALL_CPI_DEFAULT / 100;
+const uint8_t pmw3360_MAXCPI = 0x77;
 const uint8_t CPI_SNIP = KEYBALL_CPI_SNIP / 100;
 const uint8_t CPI_MAX        = pmw3360_MAXCPI + 1;
 const uint8_t SCROLL_DIV_MAX = 7;
@@ -498,27 +499,27 @@ void keyboard_post_init_kb(void) {
 }
 
 
-void keyboard_post_init_kb(void) {
-#ifdef SPLIT_KEYBOARD
-    // register transaction handlers on secondary.
-    if (!is_keyboard_master()) {
-        transaction_register_rpc(KEYBALL_GET_INFO, rpc_get_info_handler);
-        transaction_register_rpc(KEYBALL_GET_MOTION, rpc_get_motion_handler);
-        transaction_register_rpc(KEYBALL_SET_CPI, rpc_set_cpi_handler);
-    }
-#endif
+// void keyboard_post_init_kb(void) {
+// #ifdef SPLIT_KEYBOARD
+//     // register transaction handlers on secondary.
+//     if (!is_keyboard_master()) {
+//         transaction_register_rpc(KEYBALL_GET_INFO, rpc_get_info_handler);
+//         transaction_register_rpc(KEYBALL_GET_MOTION, rpc_get_motion_handler);
+//         transaction_register_rpc(KEYBALL_SET_CPI, rpc_set_cpi_handler);
+//     }
+// #endif
 
-    // read keyball configuration from EEPROM
-    if (eeconfig_is_enabled()) {
-        keyball_config_t c;
-        c.raw = eeconfig_read_kb();
-        keyball_set_cpi(c.cpi);
-        keyball_set_scroll_div(c.sdiv);
-    }
+//     // read keyball configuration from EEPROM
+//     if (eeconfig_is_enabled()) {
+//         keyball_config_t c;
+//         c.raw = eeconfig_read_kb();
+//         keyball_set_cpi(c.cpi);
+//         keyball_set_scroll_div(c.sdiv);
+//     }
 
-    keyball_on_adjust_layout(KEYBALL_ADJUST_PENDING);
-    keyboard_post_init_user();
-}
+//     keyball_on_adjust_layout(KEYBALL_ADJUST_PENDING);
+//     keyboard_post_init_user();
+// }
 
 //--
 
