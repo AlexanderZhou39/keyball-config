@@ -24,7 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SPLIT_POINTING_ENABLE
 #define POINTING_DEVICE_RIGHT
 
-// #define USB_VBUS_PIN     GP28
+// #define USB_VBUS_PIN     GP24
+// #define SPLIT_HAND_PIN   GP22
 
 // Key matrix parameters
 #define MATRIX_ROWS         (4 * 2)  // split keyboard
@@ -41,9 +42,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SPLIT_HAND_MATRIX_GRID_LOW_IS_LEFT
 
 /* Replug-in issue */
-// #define SPLIT_WATCHDOG_ENABLE //v2.00
+#define SPLIT_WATCHDOG_ENABLE //v2.00
+#define SPLIT_WATCHDOG_TIMEOUT 3000
 #define SPLIT_USB_DETECT
-#define SPLIT_USB_TIMEOUT       3000
+#define SPLIT_USB_TIMEOUT       2000
 
 #define SPLIT_TRANSACTION_IDS_KB KEYBALL_GET_INFO, KEYBALL_GET_MOTION, KEYBALL_SET_CPI
 
